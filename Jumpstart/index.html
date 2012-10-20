@@ -6,15 +6,18 @@
   <body>
     <input id="new-todo" placeholder="What needs to be done?" autofocus>
     <script type="text/javascript">
-      window.addEventListener('load', windowLoadHandler, false);
-      function newTodoKeyPressHandler(event) {
-        if (event.keyCode === 13) {
-          alert("We have a new Todo!");
+      (function() {
+        window.addEventListener('load', windowLoadHandler, false);
+        function newTodoKeyPressHandler(event) {
+          if (event.keyCode === 13) {
+            var todo = document.getElementById('new-todo').value;
+            alert("We have a new Todo: " + todo);
+          }
         }
-      }
-      function windowLoadHandler() {
-        document.getElementById('new-todo').addEventListener('keypress', newTodoKeyPressHandler, false);
-      }
+        function windowLoadHandler() {
+          document.getElementById('new-todo').addEventListener('keypress', newTodoKeyPressHandler, false);
+        }
+      }());
     </script>
   </body>
 </html>
