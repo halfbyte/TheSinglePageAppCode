@@ -4,9 +4,17 @@
     <title>The Single Page App - Todolist</title>
   </head>
   <body>
-    <!-- markup goes here -->
+    <input id="new-todo" placeholder="What needs to be done?" autofocus>
     <script type="text/javascript">
-      // code goes here
+      window.addEventListener('load', windowLoadHandler, false);
+      function newTodoKeyPressHandler(event) {
+        if (event.keyCode === 13) {
+          alert("We have a new Todo!");
+        }
+      }
+      function windowLoadHandler() {
+        document.getElementById('new-todo').addEventListener('keypress', newTodoKeyPressHandler, false);
+      }
     </script>
   </body>
 </html>
