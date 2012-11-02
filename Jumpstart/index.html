@@ -13,7 +13,10 @@
           if (event.keyCode === 13) {
             var todo = document.getElementById('new-todo').value;
             var list = document.getElementById('todo-list');
-            list.innerHTML += ("<li>" + todo  + "</li>");
+            var item = document.createElement("li");
+            item.appendChild(document.createTextNode(todo));
+            list.appendChild(item);
+            document.getElementById('new-todo').value = "";
           }
         }
         function windowLoadHandler() {
