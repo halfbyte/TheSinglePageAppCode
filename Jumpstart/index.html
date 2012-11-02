@@ -5,13 +5,15 @@
   </head>
   <body>
     <input id="new-todo" placeholder="What needs to be done?" autofocus>
+    <ul id="todo-list"></ul>
     <script type="text/javascript">
       (function() {
         window.addEventListener('load', windowLoadHandler, false);
         function newTodoKeyPressHandler(event) {
           if (event.keyCode === 13) {
             var todo = document.getElementById('new-todo').value;
-            alert("We have a new Todo: " + todo);
+            var list = document.getElementById('todo-list');
+            list.innerHTML += ("<li>" + todo  + "</li>");
           }
         }
         function windowLoadHandler() {
