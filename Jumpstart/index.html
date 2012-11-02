@@ -8,21 +8,46 @@
     <ul id="todo-list"></ul>
     <script type="text/javascript">
       (function() {
-        window.addEventListener('load', windowLoadHandler, false);
-        function newTodoKeyPressHandler(event) {
-          if (event.keyCode === 13) {
-            var todo = document.getElementById('new-todo').value;
-            var list = document.getElementById('todo-list');
+
+        var todoListItems = [];
+        function redrawList() {
+          var i;
+          var list = document.getElementById('todo-list');
+          var len = todoListItems.length;
+          list.innerHTML="";
+          for(i=0;i<len;i++) {
             var item = document.createElement("li");
-            item.appendChild(document.createTextNode(todo));
+            item.appendChild(document.createTextNode(todoListItems[i]));
             list.appendChild(item);
-            document.getElementById('new-todo').value = "";
           }
         }
+        function addToList(item) {
+          todoListItems.push(item);
+          localStorage.setItem('todo-list', JSON.stringify(todoListItems));
+        }
+        function reloadList(item) {
+          var stored = localStorage.getItem('todo-list');
+          if (stored) {
+            todoListItems = JSON.parse(stored);
+          }
+          redrawList();
+        }
+        function newTodoKeyPressHandler(event) {
+          if (event.keyCode === 13) {
+            var todoField = document.getElementById('new-todo');
+            addToList(todoField.value);
+
+            redrawList();
+            todoField.value = "";
+          }
+        }
+        window.addEventListener('load', windowLoadHandler, false);
         function windowLoadHandler() {
+          reloadList();
           document.getElementById('new-todo').addEventListener('keypress', newTodoKeyPressHandler, false);
         }
       }());
     </script>
+    <div id="test"></div>
   </body>
 </html>
