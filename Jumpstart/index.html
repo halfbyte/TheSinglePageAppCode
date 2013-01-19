@@ -35,6 +35,7 @@
           for(i=0;i<len;i++) {
             var todo = todoListItems[i];
             var item = document.createElement("li");
+            item.id = "li_" + i;
             if (todo.completed) {
               item.className += "completed"
             }
@@ -52,13 +53,22 @@
 
             var label = document.createElement('label');
             label.appendChild(document.createTextNode(todo.title));
+            label.addEventListener('dblclick', editItemHandler);
+            label.setAttribute('data-todo-id', i);
+
+            // delete button
+            deleteButton = document.createElement('button');
+            deleteButton.className = 'destroy';
+            deleteButton.setAttribute('data-todo-id', i);
+            deleteButton.addEventListener('click', deleteClickHandler);
 
             // div wrapper
 
             var divDisplay = document.createElement('div');
-            divDisplay.className="view";
+            divDisplay.className = "view";
             divDisplay.appendChild(checkbox);
             divDisplay.appendChild(label);
+            divDisplay.appendChild(deleteButton);
 
             item.appendChild(divDisplay);
 
@@ -89,6 +99,16 @@
           }
           redrawList();
         }
+        function editTodo(index, text) {
+          todoListItems[index].title = text;
+          saveList();
+          redrawList();
+        }
+        function deleteTodo(index) {
+          todoListItems.splice(index, 1);
+          saveList();
+          redrawList();
+        }
         function saveList() {
           localStorage.setItem('todo-list', JSON.stringify(todoListItems));
         }
@@ -100,14 +120,61 @@
           saveList();
           redrawList();
         }
+        function editItemHandler(event) {
+          var label = event.target;
+          var index = label.getAttribute('data-todo-id');
+          var todo = todoListItems[index];
+          var li = document.getElementById('li_' + index)
+          var input = document.createElement('input');
+          input.setAttribute('data-todo-id', index);
+          input.className = "edit";
+          input.value = todo.title;
+          input.addEventListener('keypress', inputEditItemKeypressHandler);
+          input.addEventListener('blur', inputEditItemBlurHandler);
+          li.appendChild(input);
+          li.className = "editing";
+          input.focus();
+        }
+        function inputEditItemKeypressHandler(event) {
+          if (event.keyCode === 13) {
+            var input = event.target;
+            var text = input.value.trim();
+            var index = input.getAttribute('data-todo-id');
+            input.removeEventListener('blur', inputEditItemBlurHandler);
+            if (text === '') {
+              deleteTodo(index);
+            } else {
+              editTodo(index, text);
+            }
+          }
+        }
+        function inputEditItemBlurHandler(event) {
+          var input = event.target;
+          var text = input.value.trim();
+          var index = input.getAttribute('data-todo-id');
+          if (text === '') {
+            deleteTodo(index);
+          } else {
+            editTodo(index, text);
+          }
+        }
+
+        function deleteClickHandler(event) {
+          var button = event.target;
+          var index = button.getAttribute('data-todo-id');
+          deleteTodo(index);
+        }
+
 
         function newTodoKeyPressHandler(event) {
           if (event.keyCode === 13) {
             var todoField = document.getElementById('new-todo');
-            addToList(todoField.value);
-
-            redrawList();
-            todoField.value = "";
+            var text = todoField.value.trim();
+            if (text !== '') {
+              addToList(todoField.value);
+              redrawList();
+              todoField.value = "";
+            }
           }
         }
         window.addEventListener('load', windowLoadHandler, false);
