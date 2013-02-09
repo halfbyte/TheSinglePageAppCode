@@ -11,8 +11,11 @@
         <input id="new-todo" placeholder="What needs to be done?" autofocus>
       </header>
       <section id="main">
+        <input id="toggle-all" type="checkbox">
+        <label for="toggle-all">Mark all as complete</label>
         <ul id="todo-list"></ul>
       </section>
+      <footer id="footer"></footer>
     </section>
     <footer id="info">
       <p>Template by <a href="http://github.com/sindresorhus">Sindre Sorhus</a></p>
@@ -43,12 +46,27 @@
         }
 
         function redrawList() {
+          var incomplete = 0;
           var i;
           var list = document.getElementById('todo-list');
           var len = todoListItems.length;
+
+          var filter = "all";
+          if (location.hash !== '' && location.hash.match(/^#(all|completed|active)$/)) {
+            filter = location.hash.substr(1);
+          }
+
+
+
           list.innerHTML="";
           for(i=0;i<len;i++) {
             var todo = todoListItems[i];
+            if (!todo.completed) {
+              incomplete++;
+            }
+            if (filter == 'completed' && !todo.completed) continue;
+            if (filter == 'active' && todo.completed) continue;
+
             var item = document.createElement("li");
             item.id = "li_" + todo.id;
             if (todo.completed) {
@@ -89,6 +107,69 @@
 
             list.appendChild(item);
           }
+          document.getElementById('toggle-all').checked = (incomplete == 0);
+          // render footer
+
+          // number of incomplete items
+          var footer = document.getElementById('footer');
+          footer.innerHTML = "";
+          var todoCount = document.createElement('span');
+          todoCount.id = "todo-count";
+          var count = document.createElement('strong');
+          count.appendChild(document.createTextNode(incomplete));
+          todoCount.appendChild(count);
+          var items = (incomplete == 1) ? "item" : "items";
+          todoCount.appendChild(document.createTextNode(" " + items + " left"));
+          footer.appendChild(todoCount);
+
+          // filter
+
+          // let's check if we need a filter first
+          if (len > 0 && (len - incomplete) > 0) {
+            var filterList = document.createElement('ul');
+            filterList.id = "filters";
+
+            var allFilter = document.createElement("li");
+            var allFilterLink = document.createElement('a');
+            allFilterLink.href="#all";
+            allFilterLink.appendChild(document.createTextNode("All"));
+            if (filter == 'all') allFilterLink.className = "selected";
+            allFilter.appendChild(allFilterLink);
+            filterList.appendChild(allFilter);
+
+            var activeFilter = document.createElement("li");
+            var activeFilterLink = document.createElement('a');
+            activeFilterLink.appendChild(document.createTextNode('Active'));
+            activeFilterLink.href="#active";
+            if (filter == 'active') activeFilterLink.className = "selected";
+            activeFilter.appendChild(activeFilterLink);
+            filterList.appendChild(activeFilter);
+
+            var completedFilter = document.createElement("li");
+            var completedFilterLink = document.createElement('a');
+            completedFilterLink.appendChild(document.createTextNode('Completed'));
+            completedFilterLink.href="#completed";
+            if (filter == 'completed') completedFilterLink.className = "selected";
+            completedFilter.appendChild(completedFilterLink);
+            filterList.appendChild(completedFilter);
+
+            footer.appendChild(filterList);
+          }
+
+
+          // remove completed buttons
+
+          if (len > 0 && (len - incomplete) > 0) {
+            var button = document.createElement('button');
+            button.id = 'clear-completed';
+            button.appendChild(document.createTextNode("Clear completed (" + (len - incomplete) + ")"));
+            button.addEventListener('click', removeAllCompletedHandler, false);
+            footer.appendChild(button);
+          }
+
+
+
+
         }
         function addToList(title) {
           var todo = new TodoItem(title, false);
@@ -152,6 +233,7 @@
         function saveList() {
           localStorage.setItem('todo-list', JSON.stringify(todoListItems));
         }
+
         function checkboxChangeHandler(event) {
           var checkbox = event.target;
           var id = checkbox.getAttribute('data-todo-id');
@@ -205,6 +287,29 @@
           deleteTodo(id);
         }
 
+        function toggleAllHandler(event) {
+          var i,l;
+          var toggle = event.target;
+          for(i=0,l=todoListItems.length;i<l;i++) {
+            todoListItems[i].completed = toggle.checked;
+          }
+          saveList();
+          redrawList();
+        }
+
+        function removeAllCompletedHandler(event) {
+          var i,l;
+          var newList = [];
+          var toggle = event.target;
+          for(i=0,l=todoListItems.length;i<l;i++) {
+            if (!todoListItems[i].completed) {
+              newList.push(todoListItems[i])
+            }
+          }
+          todoListItems = newList;
+          saveList();
+          redrawList();
+        }
 
         function newTodoKeyPressHandler(event) {
           if (event.keyCode === 13) {
@@ -220,7 +325,9 @@
         window.addEventListener('load', windowLoadHandler, false);
         function windowLoadHandler() {
           reloadList();
+          document.getElementById('toggle-all').addEventListener('change', toggleAllHandler, false);
           document.getElementById('new-todo').addEventListener('keypress', newTodoKeyPressHandler, false);
+          window.addEventListener('hashchange', redrawList, false);
         }
       }());
     </script>
