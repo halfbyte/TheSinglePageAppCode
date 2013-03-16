@@ -78,7 +78,7 @@
   }
 
   function shouldShowItem(todo, filter) {
-    return (filter === 'completed' && todo.completed) || 
+    return (filter === 'all') || (filter === 'completed' && todo.completed) || 
     (filter === 'active' && !todo.completed);
   }
 
