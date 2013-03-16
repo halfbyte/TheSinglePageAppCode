@@ -78,7 +78,7 @@
       return item;
   }
 
-  function showItem(todo, filter) {
+  function shouldShowItem(todo, filter) {
     return (filter === 'completed' && todo.completed) || 
     (filter === 'active' && !todo.completed);
   }
@@ -91,7 +91,7 @@
     list.innerHTML="";
     for(i=0;i<len;i++) {
       var todo = todoListItems[i];
-      if (!showItem(todo, filter)) continue;
+      if (!shouldShowItem(todo, filter)) continue;
       list.appendChild(createTodoItemElement(todo));
     }
     document.getElementById('toggle-all').checked = (incompleteItems() === 0);
