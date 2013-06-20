@@ -42,28 +42,20 @@
   };
 
   TodoItemCollection.prototype.each = function(fun) {
-    var i, l;
-    for(i = 0, l = this.size(); i < l; i++) {
-      fun(this.todoListItems[i], i);
-    }
+    _(this.todoListItems).each(fun, this);
   };
 
   TodoItemCollection.prototype.eachFiltered = function(filter, fun) {
-    var i, l;
-    this.each(function(todo, i) {
-      if ((filter === 'all') || (filter === 'completed' && todo.completed) || 
-        (filter === 'active' && !todo.completed)) {
-          fun(todo, i);
-      }
-    });
+    _(this.todoListItems).chain().select(function(todo) {
+      return ((filter === 'all') || (filter === 'completed' && todo.completed) || 
+        (filter === 'active' && !todo.completed)) 
+    }).each(fun, this);
   };
 
   TodoItemCollection.prototype.completedItems = function() {
-    var complete = 0;
-    this.each(function(item) {
-      if(item.completed) complete++;
-    });
-    return complete;
+    return _(this.todoListItems).select(function(item) {
+      return item.completed;
+    }).length
   };
 
   TodoItemCollection.prototype.incompleteItems = function() {
@@ -71,6 +63,7 @@
   };
 
   TodoItemCollection.prototype.add = function (title) {
+    console.log(title);
     this.todoListItems.push(new TodoItem(title, false));
     this.save();
   };
@@ -102,13 +95,11 @@
   };
 
   TodoItemCollection.prototype.getById = function(id) {
-    var i,l;
-    for(i=0,l=this.todoListItems.length;i<l;i++) {
-      var item = this.todoListItems[i];
-      if (item.id == id) return item;
-    }
-    return null;
+    return _(this.todoListItems).find(function(item) {
+      return (item.id === id);
+    })
   };
+  
   TodoItemCollection.prototype.getIndexById = function(id) {
     for(i=0,l=this.todoListItems.length;i<l;i++) {
       var item = this.todoListItems[i];
@@ -152,33 +143,33 @@
   };
 
   TodoItemCollection.prototype.clearCompleted = function(status) {
-    var newList = [];
-    this.each(function(item) {
-      if (!item.completed) newList.push(item);
+    this.todoListItems = _(this.todoListItems).filter(function(item) {
+      return !item.completed
     });
-    this.todoListItems = newList;
-    todoItemCollection.save();
+    this.save();
   };
 
   function TodoView(collection) {
     this.collection = collection;
     // binding all event handlers to this object
-    this._onCheckboxChange = this._onCheckboxChange.bind(this);
-    this._onEditItem = this._onEditItem.bind(this);
-    this._onEditItemEnd = this._onEditItemEnd.bind(this);
-    this._onInputEditItemKeypress = this._onInputEditItemKeypress.bind(this);
-    this._onDeleteClick = this._onDeleteClick.bind(this);
-    this._onRemoveAllCompleted = this._onRemoveAllCompleted.bind(this);
-    this._onToggleAll = this._onToggleAll.bind(this);
-    this._onNewTodoKeyPress = this._onNewTodoKeyPress.bind(this);
-    this.render = this.render.bind(this);
-
+    _(this).bindAll(
+      '_onCheckboxChange',
+      '_onEditItem',
+      '_onEditItemEnd',
+      '_onInputEditItemKeypress',
+      '_onDeleteClick',
+      '_onRemoveAllCompleted',
+      '_onToggleAll',
+      '_onNewTodoKeyPress',
+      'render'
+    );
     // binding to the collection change event
     this.collection.onChange(this.render);
     // binding global UI event handlers
-    document.getElementById('toggle-all').addEventListener('change', this._onToggleAll, false);
-    document.getElementById('new-todo').addEventListener('keypress', this._onNewTodoKeyPress, false);
-    window.addEventListener('hashchange', this.render, false);
+    $('#toggle-all').change(this._onToggleAll);
+    $('#new-todo').keypress(this._onNewTodoKeyPress);
+    $(window).on('hashchange', this.render);
+
     this.render();
   }
 
@@ -186,12 +177,7 @@
     this._renderList();
     this._renderFooter();
   };
-  TodoView.prototype._createTextElement = function (el, text) {
-    var element = document.createElement(el);
-    element.appendChild(document.createTextNode(text));
-    return element;
-  };
-
+  
   TodoView.prototype._currentFilter = function() {
     var filter = "all";
     if (
@@ -204,133 +190,68 @@
   };
 
   TodoView.prototype._createTodoItemElement = function(todo) {
-      var item = document.createElement("li");
-      item.id = "li_" + todo.id;
-      if (todo.completed) {
-        item.className += "completed";
-      }
-      var _this = this;
-      // checkbox
-      var checkbox = document.createElement('input');
-      checkbox.className = "toggle";
-      checkbox.type = "checkbox";
-      checkbox.addEventListener('change', this._onCheckboxChange);
-      checkbox.checked = todo.completed;
-      checkbox.setAttribute('data-todo-id', todo.id);
-
-      // label
-      var label = this._createTextElement('label', todo.title);
-      label.addEventListener('dblclick', this._onEditItem);
-      label.setAttribute('data-todo-id', todo.id);
-
-      // delete button
-      deleteButton = document.createElement('button');
-      deleteButton.className = 'destroy';
-      deleteButton.setAttribute('data-todo-id', todo.id);
-      deleteButton.addEventListener('click', this._onDeleteClick);
-
-      // div wrapper
-      var divDisplay = document.createElement('div');
-      divDisplay.className = "view";
-      divDisplay.appendChild(checkbox);
-      divDisplay.appendChild(label);
-      divDisplay.appendChild(deleteButton);
-
-      item.appendChild(divDisplay);
+      window.renderedTemplate = _.template($('#item-template').text(), todo);
+      var item = $(_.template($('#item-template').html(), todo).trim());
+      item.on('change', "input[type='checkbox']", this._onCheckboxChange);
+      item.on('dblclick', "label", this._onEditItem);
+      item.on('click', "button.destroy", this._onDeleteClick);      
       return item;
   };
 
   TodoView.prototype._renderList = function() {
     var filter = this._currentFilter();
-    var list = document.getElementById('todo-list');
-    list.innerHTML = "";
+    var list = $('#todo-list');
+    list.html('');
     var _this = this;
     this.collection.eachFiltered(filter, function(todo) {
-      list.appendChild(_this._createTodoItemElement(todo));
+      list.append(_this._createTodoItemElement(todo));
     });
-    document.getElementById('toggle-all').checked =
-      (this.collection.incompleteItems() === 0);
-  };
-
-  TodoView.prototype._createTodoStats = function (incomplete) {
-    var todoCount = document.createElement('span');
-    todoCount.id = "todo-count";
-    var count = this._createTextElement('strong', incomplete);
-    todoCount.appendChild(count);
-    var items = (incomplete == 1) ? "item" : "items";
-    todoCount.appendChild(
-      document.createTextNode(" " + items + " left")
-    );
-    return todoCount;
-  };
-
-  TodoView.prototype._createFilter = function(name, value, current) {
-    var filter = document.createElement("li");
-    var filterLink = this._createTextElement('a', name);
-    filterLink.href="#" + value;
-    if (current == value) filterLink.className = "selected";
-    filter.appendChild(filterLink);
-    return filter;
-  };
-
-  TodoView.prototype._createFilters = function(filter) {
-    var filterList = document.createElement('ul');
-    filterList.id = "filters";
-    filterList.appendChild(this._createFilter('All', 'all', filter));
-    filterList.appendChild(this._createFilter('Active', 'active', filter));
-    filterList.appendChild(this._createFilter('Completed', 'completed', filter));
-    return filterList;
-  };
-
-  TodoView.prototype._createClearCompletedButton = function(completed) {
-      var button = this._createTextElement('button',
-        "Clear completed (" + completed + ")"
-      );
-      button.id = 'clear-completed';
-      button.addEventListener('click',
-        this._onRemoveAllCompleted, false);
-      return button;
+    $('#toggle-all').attr('checked', (this.collection.incompleteItems() === 0));
   };
 
   TodoView.prototype._renderFooter = function() {
     var len = this.collection.size();
     var completed = this.collection.completedItems();
-    var footer = document.getElementById('footer');
-    footer.innerHTML = "";
-    footer.appendChild(this._createTodoStats(len - completed));
-    if (len > 0 && (completed > 0)) {
-      footer.appendChild(this._createFilters(this._currentFilter()));
-      footer.appendChild(this._createClearCompletedButton(completed));
-    }
+    var footer = $('#footer');
+    var filter = this._currentFilter();
+    var incomplete = len - completed;
+    footer.html(_.template($('#footer-template').html(), {
+      incomplete: incomplete,
+      completed: completed,
+      itemsPluralForm: (incomplete == 1) ? "item" : "items",
+      showFilters: len > 0 && (completed > 0),
+      filters: [
+        {name: 'All', value: 'all', className: filter === 'all' ? 'selected' : '' },
+        {name: 'Active', value: 'active', className: filter === 'active' ? 'selected' : '' },
+        {name: 'Completed', value: 'completed', className: filter === 'completed' ? 'selected' : '' }
+      ]
+    }).trim());
+    footer.on('click', '#clear-completed', this._onRemoveAllCompleted);
   };
 
   TodoView.prototype._onCheckboxChange = function(event) {
-    console.log(this);
     var checkbox = event.target;
-    var id = checkbox.getAttribute('data-todo-id');
+    var id = $(checkbox).data('todo-id');
     this.collection.updateStatus(id, checkbox.checked);
   };
 
   TodoView.prototype._onEditItem = function(event) {
-    var label = event.target;
-    var id = label.getAttribute('data-todo-id');
+    var label = $(event.target);
+    var id = label.data('todo-id');
     var todo = this.collection.getById(id);
-    var li = document.getElementById('li_' + id);
-    var input = document.createElement('input');
-    input.setAttribute('data-todo-id', id);
-    input.className = "edit";
-    input.value = todo.title;
-    input.addEventListener('keypress', this._onInputEditItemKeypress);
-    input.addEventListener('blur', this._onEditItemEnd);
-    li.appendChild(input);
-    li.className = "editing";
+    var li = $('#li_' + id);
+    var input = $(_.template($('#edit-template').html(), todo).trim());
+    $(input).on('keypress', this._onInputEditItemKeypress);
+    $(input).on('blur', this._onEditItemEnd);
+    li.append(input);
+    li.addClass("editing");
     input.focus();
   };
 
   TodoView.prototype._onEditItemEnd = function(event) {
-    var input = event.target;
-    var text = input.value.trim();
-    var id = input.getAttribute('data-todo-id');
+    var input = $(event.target);
+    var text = input.val().trim();
+    var id = input.data('todo-id');
     this.collection.updateText(id, text);
   };
 
@@ -339,8 +260,8 @@
   };
 
   TodoView.prototype._onDeleteClick = function(event) {
-    var button = event.target;
-    var id = button.getAttribute('data-todo-id');
+    var button = $(event.target);
+    var id = button.data('todo-id');
     this.collection.destroy(id);
   };
 
@@ -355,11 +276,11 @@
 
   TodoView.prototype._onNewTodoKeyPress = function(event) {
     if (event.keyCode === 13) {
-      var todoField = document.getElementById('new-todo');
-      var text = todoField.value.trim();
+      var todoField = $('#new-todo');
+      var text = todoField.val().trim();
       if (text !== '') {
-        this.collection.add(todoField.value);
-        todoField.value = "";
+        this.collection.add(text);
+        todoField.val("");
       }
     }
   };

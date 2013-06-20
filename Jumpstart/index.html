@@ -20,7 +20,34 @@
     <footer id="info">
       <p>Template by <a href="http://github.com/sindresorhus">Sindre Sorhus</a></p>
     </footer>
+    <script type="text/javascript" src="jquery-1.9.1.min.js" charset="UTF-8"></script>
+    <script type="text/javascript" src="underscore.js" charset="UTF-8"></script>
     <script type="text/javascript" src="application.js" charset="UTF-8"></script>
+    
+    <script type="text/x-template" id="item-template">
+      <li id="li_<%= id %>" class="<%= completed ? 'completed' : ''%>">
+        <div class="view">
+          <input type="checkbox" class="toggle" <%= completed ? 'checked' : '' %> data-todo-id="<%= id %>"/> 
+          <label data-todo-id="<%= id %>"><%- title %></label>
+          <button class="destroy" data-todo-id="<%= id %>"/>
+        </div>
+      </li>
+    </script>
+    <script type="text/x-template" id="footer-template">
+      <span id="todo-count"><strong><%= incomplete %></strong> <%= itemsPluralForm %> left</span>
+      <% if (showFilters) { %>
+        <ul id="filters">
+          <% _(filters).each(function(filter) { %>
+            <li><a href="#<%= filter.value %>" class="<%= filter.className %>"><%= filter.name %></a></li>
+          <% }) %>            
+        </ul>
+        <button id="clear-completed">Clear completed (<%= completed %>)</button>
+      <% } %>
+    </script>
+    <script type="text/x-template" id="edit-template">
+      <input type="text" data-todo-id="<%= id %>" class="edit" value="<%= title %>" />
+    </script>
+    
     <div id="test"></div>
   </body>
 </html>
